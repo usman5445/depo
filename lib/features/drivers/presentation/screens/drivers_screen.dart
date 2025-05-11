@@ -117,53 +117,55 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
           // Left side - Data Table (3/4)
           Expanded(
             flex: 3,
-            child: Card(
-              margin: const EdgeInsets.all(16),
-              child: Consumer(
-                builder: (context, ref, child) {
-                  final driversState = ref.watch(driversProvider);
+            child: SizedBox.expand(
+              child: Card(
+                margin: const EdgeInsets.all(16),
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final driversState = ref.watch(driversProvider);
 
-                  return driversState.when(
-                    data: (drivers) {
-                      return SingleChildScrollView(
-                        child: DataTable(
-                          showCheckboxColumn: true,
-                          columns: const [
-                            DataColumn(label: Text('नाव')),
-                            DataColumn(label: Text('फोन')),
-                            DataColumn(label: Text('परवाना')),
-                            DataColumn(label: Text('सामील दिनांक')),
-                          ],
-                          rows: List<DataRow>.generate(
-                            drivers.length,
-                            (index) {
-                              final driver = drivers[index];
-                              return DataRow(
-                                selected: _selectedRowIndex == index,
-                                onSelectChanged: (_) {
-                                  setState(() => _selectedRowIndex = index);
-                                  _selectDriver(driver);
-                                },
-                                cells: [
-                                  DataCell(Text(driver.name)),
-                                  DataCell(Text(driver.phone)),
-                                  DataCell(Text(driver.license)),
-                                  DataCell(Text(driver.joinDate)),
-                                ],
-                              );
-                            },
+                    return driversState.when(
+                      data: (drivers) {
+                        return SingleChildScrollView(
+                          child: DataTable(
+                            showCheckboxColumn: true,
+                            columns: const [
+                              DataColumn(label: Text('नाव')),
+                              DataColumn(label: Text('फोन')),
+                              DataColumn(label: Text('परवाना')),
+                              DataColumn(label: Text('सामील दिनांक')),
+                            ],
+                            rows: List<DataRow>.generate(
+                              drivers.length,
+                              (index) {
+                                final driver = drivers[index];
+                                return DataRow(
+                                  selected: _selectedRowIndex == index,
+                                  onSelectChanged: (_) {
+                                    setState(() => _selectedRowIndex = index);
+                                    _selectDriver(driver);
+                                  },
+                                  cells: [
+                                    DataCell(Text(driver.name)),
+                                    DataCell(Text(driver.phone)),
+                                    DataCell(Text(driver.license)),
+                                    DataCell(Text(driver.joinDate)),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (error, stackTrace) => Center(
-                      child: Text('त्रुटी: $error'),
-                    ),
-                  );
-                },
+                        );
+                      },
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      error: (error, stackTrace) => Center(
+                        child: Text('त्रुटी: $error'),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),

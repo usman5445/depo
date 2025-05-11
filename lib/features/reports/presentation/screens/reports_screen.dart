@@ -41,68 +41,73 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Scaffold(
       body: Row(
         children: [
-          // Left side - Report Preview (3/4)
+          // Left side - Report Content (3/4)
           Expanded(
             flex: 3,
-            child: Card(
-              margin: const EdgeInsets.all(16),
-              child: Consumer(
-                builder: (context, ref, child) {
-                  final reportState = ref.watch(reportsProvider);
+            child: SizedBox.expand(
+              child: Card(
+                margin: const EdgeInsets.all(16),
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final reportState = ref.watch(reportsProvider);
 
-                  return reportState.when(
-                    data: (report) {
-                      if (report == null) {
-                        return const Center(
-                          child: Text('अहवाल पाहण्यासाठी कृपया अहवाल तयार करा'),
-                        );
-                      }
+                    return reportState.when(
+                      data: (report) {
+                        if (report == null) {
+                          return const Center(
+                            child:
+                                Text('अहवाल पाहण्यासाठी कृपया अहवाल तयार करा'),
+                          );
+                        }
 
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'अहवाल प्रीव्ह्यू',
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              '${DateFormat('yyyy-MM-dd').format(report.startDate)} ते ${DateFormat('yyyy-MM-dd').format(report.endDate)}',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 24),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: DataTable(
-                                columns: report.data.first.keys
-                                    .map((key) => DataColumn(label: Text(key)))
-                                    .toList(),
-                                rows: report.data
-                                    .map(
-                                      (row) => DataRow(
-                                        cells: row.values
-                                            .map((value) => DataCell(
-                                                Text(value.toString())))
-                                            .toList(),
-                                      ),
-                                    )
-                                    .toList(),
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'अहवाल प्रीव्ह्यू',
+                                style:
+                                    Theme.of(context).textTheme.headlineMedium,
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (error, stackTrace) => Center(
-                      child: Text('त्रुटी: $error'),
-                    ),
-                  );
-                },
+                              const SizedBox(height: 16),
+                              Text(
+                                '${DateFormat('yyyy-MM-dd').format(report.startDate)} ते ${DateFormat('yyyy-MM-dd').format(report.endDate)}',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 24),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: DataTable(
+                                  columns: report.data.first.keys
+                                      .map(
+                                          (key) => DataColumn(label: Text(key)))
+                                      .toList(),
+                                  rows: report.data
+                                      .map(
+                                        (row) => DataRow(
+                                          cells: row.values
+                                              .map((value) => DataCell(
+                                                  Text(value.toString())))
+                                              .toList(),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      error: (error, stackTrace) => Center(
+                        child: Text('त्रुटी: $error'),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),

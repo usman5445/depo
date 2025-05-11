@@ -13,22 +13,30 @@ class BackupRestoreScreen extends ConsumerStatefulWidget {
 }
 
 class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
-  final _backupNameController = TextEditingController();
   BackupInfo? _selectedBackup;
   int? _selectedRowIndex;
+  String? _selectedDirectory;
 
-  @override
-  void dispose() {
-    _backupNameController.dispose();
-    super.dispose();
+  Future<void> _selectBackupLocation() async {
+    try {
+      final directory =
+          await ref.read(backupProvider.notifier).selectBackupLocation();
+      setState(() {
+        _selectedDirectory = directory;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No directory selected')),
+        );
+      }
+    }
   }
 
   Future<void> _createBackup() async {
-    final name = _backupNameController.text.trim();
-    if (name.isEmpty) return;
-
-    await ref.read(backupProvider.notifier).createBackup(name);
-    _backupNameController.clear();
+    await ref.read(backupProvider.notifier).createBackup(
+          customDirectory: _selectedDirectory,
+        );
   }
 
   Future<void> _restoreBackup() async {
@@ -66,7 +74,6 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
               FilledButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // TODO: Use a better way to restart the app
                 },
                 child: const Text('पुन्हा सुरु करा'),
               ),
@@ -116,60 +123,62 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
           // Left side - Backups List (3/4)
           Expanded(
             flex: 3,
-            child: Card(
-              margin: const EdgeInsets.all(16),
-              child: Consumer(
-                builder: (context, ref, child) {
-                  final backupsState = ref.watch(backupProvider);
+            child: SizedBox.expand(
+              child: Card(
+                margin: const EdgeInsets.all(16),
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final backupsState = ref.watch(backupProvider);
 
-                  return backupsState.when(
-                    data: (backups) {
-                      if (backups.isEmpty) {
-                        return const Center(
-                          child: Text('कोणतेही बॅकअप उपलब्ध नाहीत'),
-                        );
-                      }
+                    return backupsState.when(
+                      data: (backups) {
+                        if (backups.isEmpty) {
+                          return const Center(
+                            child: Text('कोणतेही बॅकअप उपलब्ध नाहीत'),
+                          );
+                        }
 
-                      return SingleChildScrollView(
-                        child: DataTable(
-                          showCheckboxColumn: false,
-                          columns: const [
-                            DataColumn(label: Text('नाव')),
-                            DataColumn(label: Text('तारीख')),
-                          ],
-                          rows: List<DataRow>.generate(
-                            backups.length,
-                            (index) {
-                              final backup = backups[index];
-                              return DataRow(
-                                selected: _selectedRowIndex == index,
-                                onSelectChanged: (_) {
-                                  setState(() {
-                                    _selectedRowIndex = index;
-                                    _selectedBackup = backup;
-                                  });
-                                },
-                                cells: [
-                                  DataCell(Text(backup.name)),
-                                  DataCell(Text(
-                                    DateFormat('yyyy-MM-dd HH:mm')
-                                        .format(backup.date),
-                                  )),
-                                ],
-                              );
-                            },
+                        return SingleChildScrollView(
+                          child: DataTable(
+                            showCheckboxColumn: false,
+                            columns: const [
+                              DataColumn(label: Text('तारीख')),
+                              DataColumn(label: Text('मार्ग')),
+                            ],
+                            rows: List<DataRow>.generate(
+                              backups.length,
+                              (index) {
+                                final backup = backups[index];
+                                return DataRow(
+                                  selected: _selectedRowIndex == index,
+                                  onSelectChanged: (_) {
+                                    setState(() {
+                                      _selectedRowIndex = index;
+                                      _selectedBackup = backup;
+                                    });
+                                  },
+                                  cells: [
+                                    DataCell(Text(
+                                      DateFormat('yyyy-MM-dd HH:mm')
+                                          .format(backup.date),
+                                    )),
+                                    DataCell(Text(backup.path)),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (error, stackTrace) => Center(
-                      child: Text('त्रुटी: $error'),
-                    ),
-                  );
-                },
+                        );
+                      },
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      error: (error, stackTrace) => Center(
+                        child: Text('त्रुटी: $error'),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -189,20 +198,29 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
-                    TextField(
-                      controller: _backupNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'बॅकअप नाव',
-                        hintText: 'बॅकअप नाव प्रविष्ट करा',
-                        border: OutlineInputBorder(),
-                      ),
+
+                    // Backup Location
+                    Text(
+                      'बॅकअप स्थान:',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(_selectedDirectory ?? 'डीफॉल्ट स्थान'),
+                    const SizedBox(height: 16),
+
+                    FilledButton.icon(
+                      onPressed: _selectBackupLocation,
+                      icon: const Icon(Icons.folder),
+                      label: const Text('बॅकअप स्थान निवडा'),
                     ),
                     const SizedBox(height: 16),
+
                     FilledButton.icon(
                       onPressed: _createBackup,
                       icon: const Icon(Icons.backup),
                       label: const Text('नवीन बॅकअप तयार करा'),
                     ),
+
                     if (_selectedBackup != null) ...[
                       const SizedBox(height: 32),
                       Text(
@@ -216,10 +234,10 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('नाव: ${_selectedBackup!.name}'),
                               Text(
                                 'तारीख: ${DateFormat('yyyy-MM-dd HH:mm').format(_selectedBackup!.date)}',
                               ),
+                              Text('मार्ग: ${_selectedBackup!.path}'),
                             ],
                           ),
                         ),
@@ -235,11 +253,6 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                         onPressed: _deleteBackup,
                         icon: const Icon(Icons.delete),
                         label: const Text('हटवा'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.error,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onError,
-                        ),
                       ),
                     ],
                   ],

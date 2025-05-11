@@ -31,9 +31,20 @@ class BackupNotifier extends StateNotifier<AsyncValue<List<BackupInfo>>> {
     }
   }
 
-  Future<void> createBackup(String name) async {
+  Future<String> selectBackupLocation() async {
     try {
-      await _repository.createBackup(name);
+      return await _repository.selectBackupLocation();
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow;
+    }
+  }
+
+  Future<void> createBackup({String? customDirectory}) async {
+    try {
+      final timestamp = DateTime.now().toIso8601String().split('T')[0];
+      await _repository.createBackup('Backup',
+          customDirectory: customDirectory);
       await loadBackups();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);

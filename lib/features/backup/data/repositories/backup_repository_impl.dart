@@ -2,16 +2,26 @@ import 'dart:io';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../domain/entities/backup_info.dart';
 import '../../domain/repositories/backup_repository.dart';
 
 class BackupRepositoryImpl implements BackupRepository {
   final Database database;
   bool _isReopening = false;
+  String? _customBackupDirectory;
 
   BackupRepositoryImpl(this.database);
 
   Future<String> get _backupDirectory async {
+    if (_customBackupDirectory != null) {
+      final dir = Directory(_customBackupDirectory!);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      return _customBackupDirectory!;
+    }
+
     final appDir = await getApplicationDocumentsDirectory();
     final backupDir = Directory(join(appDir.path, 'backups'));
     if (!await backupDir.exists()) {
@@ -36,10 +46,12 @@ class BackupRepositoryImpl implements BackupRepository {
   }
 
   @override
-  Future<BackupInfo> createBackup(String name) async {
+  Future<BackupInfo> createBackup(String name,
+      {String? customDirectory}) async {
     try {
+      _customBackupDirectory = customDirectory;
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final fileName = '${name}_$timestamp.db';
+      final fileName = '$timestamp.db';
       final backupPath = join(await _backupDirectory, fileName);
 
       // Check if backup already exists
@@ -94,16 +106,11 @@ class BackupRepositoryImpl implements BackupRepository {
           .map((file) {
             try {
               final fileName = basename(file.path);
-              final nameAndDate = fileName.split('_');
-              if (nameAndDate.length != 2) {
-                throw FormatException('Invalid backup filename format');
-              }
-
-              final name = nameAndDate[0];
-              final dateString = nameAndDate[1].replaceAll('.db', '');
+              final dateString = fileName.replaceAll('.db', '');
 
               return BackupInfo(
-                name: name,
+                name:
+                    'Backup', // Using a generic name since we're using timestamp as filename
                 path: file.path,
                 date: DateTime.parse(dateString.replaceAll('-', ':')),
               );
@@ -160,5 +167,15 @@ class BackupRepositoryImpl implements BackupRepository {
     } catch (e) {
       throw Exception('Failed to delete backup: $e');
     }
+  }
+
+  @override
+  Future<String> selectBackupLocation() async {
+    final result = await FilePicker.platform.getDirectoryPath();
+    if (result == null) {
+      throw Exception('No directory selected');
+    }
+    _customBackupDirectory = result;
+    return result;
   }
 }
